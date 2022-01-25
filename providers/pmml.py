@@ -33,15 +33,16 @@ class Pmml(Provider):
                 }))
     
     def export_to_worksheet(self, worksheet: Worksheet):
-        col = 3 # initial col
+        row = 3 # initial row
 
-        worksheet.update_cell(24, 1, 195)
-        worksheet.update_cell(25, 1, 0.03)
-        worksheet.update_cell(26, 1, 550)
-        worksheet.update_cell(27, 1, 0.05)
-        worksheet.update_cell(29, 1, 0.03)
-        worksheet.update_cell(33, 1, 0.49)
-        worksheet.update_cell(36, 1, 0.02)
+        worksheet.update_cell(1, 24, 195)
+        worksheet.update_cell(1, 25, 0.03)
+        worksheet.update_cell(1, 26, 550)
+        worksheet.update_cell(1, 27, 0.05)
+        worksheet.update_cell(1, 29, 0.03)
+        worksheet.update_cell(1, 33, 0.49)
+        worksheet.update_cell(1, 36, 0.02)
+        worksheet.update_cell(1, 38, 0.04)
 
         for building in self.buildingLinks:
             link = "https://goplex.com/api/proprietes/avendre/{}".format(building.get('link'))
@@ -50,49 +51,52 @@ class Pmml(Provider):
 
             print(link, buildingReq.status_code)
 
-            structure = PmmlDataStructure(jsonData)
+            structure = PmmlDataStructure(jsonData, row)
 
-            worksheet.insert_cols([[
+            worksheet.insert_row([
                 structure.get_address(),
                 structure.get_url(),
                 structure.get_city(),
                 structure.get_price(),
-                structure.get_downpayment(col),
+                structure.get_downpayment(),
                 structure.get_units_count(),
                 structure.get_unit_types(),
-                structure.get_price_per_unit(col),
+                structure.get_price_per_unit(),
                 structure.get_potential_gross_income(),
-                structure.get_avg_monthly_rent(col),
-                structure.get_rents_price_diff_in_sector(col),
-                structure.get_normalized_net_revenues(col),
-                structure.get_tga(col),
+                structure.get_avg_monthly_rent(),
+                structure.get_rents_price_diff_in_sector(),
+                structure.get_normalized_net_revenues(),
+                structure.get_tga(),
                 "225000",
-                structure.get_delta_per_unit(col),
-                structure.get_delta_new_construction(col),
-                structure.get_renovation_price(col),
-                structure.get_profit_per_unit(col),
-                structure.get_value_creation(col),
+                structure.get_delta_per_unit(),
+                structure.get_delta_new_construction(),
+                structure.get_renovation_price(),
+                structure.get_profit_per_unit(),
+                structure.get_value_creation(),
                 structure.get_municipal_taxes(),
                 structure.get_school_taxes(),
                 structure.get_insurances_price(),
                 structure.get_energy_price(),
-                structure.get_janitor_expenses(col),
-                structure.get_vacancy(col),
-                structure.get_annual_maintenance(col),
-                structure.get_annual_management(col),
-                structure.get_normalized_expenses(col),
-                structure.get_annual_mortgage(col),
-                structure.get_total_expenses(col),
-                structure.get_expenses_percentage(col),
-                structure.get_cashflow_before_taxes(col),
-                structure.get_capitalisation_before_taxes(col),
-                structure.get_total_non_speculative(col),
-                structure.get_bi_factor_return(col),
-                structure.get_hypothetical_appreciation(col),
-                structure.get_tri_factor_return(col),
-            ]], col, ValueInputOption.user_entered)
+                structure.get_janitor_expenses(),
+                structure.get_vacancy(),
+                structure.get_annual_maintenance(),
+                structure.get_annual_management(),
+                structure.get_normalized_expenses(),
+                structure.get_annual_mortgage(),
+                structure.get_total_expenses(),
+                structure.get_expenses_percentage(),
+                structure.get_cashflow_before_taxes(),
+                structure.get_capitalisation_before_taxes(),
+                structure.get_total_non_speculative(),
+                structure.get_bi_factor_return(),
+                structure.get_hypothetical_appreciation(),
+                structure.get_tri_factor_return(),
+                structure.get_joint_tga(),
+                structure.get_jvm(),
+                structure.get_deal_or_no_deal()
+            ], row, ValueInputOption.user_entered)
 
-            col += 1
+            row += 1
 
             # Simulate time between queries for more realism.
             time.sleep(random.randint(3, 7))

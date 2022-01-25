@@ -2,9 +2,9 @@ from data_structures.worksheet_structure import WorksheetStructure
 
 
 class PmmlDataStructure(WorksheetStructure):
-    def __init__(self, jsonData) -> None:
+    def __init__(self, jsonData, row) -> None:
         self.jsonData = jsonData
-        super().__init__()
+        super().__init__(row)
     
     def get_address(self):
         return "%s %s" % (self.jsonData.get('sNumeroCivique'), self.jsonData.get('sRue'))

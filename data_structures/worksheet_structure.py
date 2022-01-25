@@ -2,8 +2,9 @@ from abc import ABC, abstractmethod
 from gspread.utils import rowcol_to_a1
 
 class WorksheetStructure(ABC):
-    def __init__(self) -> None:
-        self.rowsIndex = dict({
+    def __init__(self, row) -> None:
+        self.row = row
+        self.colsIndex = dict({
             'address': 1,
             'url': 2,
             'city': 3,
@@ -41,15 +42,22 @@ class WorksheetStructure(ABC):
             'bi_factor_return': 35,
             'hypothetical_appreciation': 36,
             'tri_factor_return': 37,
-            'jvm': 38
+            'joint_tga': 38,
+            'jvm': 39,
+            'deal_or_no_deal': 40
         })
-        self.vacancyEstimateCell = "$A$%s" % (self.rowsIndex.get('vacancy'))
-        self.janitorEstimateCell = "$A$%s" % (self.rowsIndex.get('janitor'))
-        self.maintenanceEstimateCell = "$A$%s" % (self.rowsIndex.get('maintenance'))
-        self.managementEstimateCell = "$A$%s" % (self.rowsIndex.get('management'))
-        self.mortgageEstimateCell = "$A$%s" % (self.rowsIndex.get('mortgage'))
-        self.capitalisationEstimateCell = "$A$%s" % (self.rowsIndex.get('capitalisation'))
-        self.hypotheticalEstimateCell = "$A$%s" % (self.rowsIndex.get('hypothetical_appreciation'))
+
+        self.vacancyEstimateCell = "$%s$1" % (''.join(filter(str.isalpha, rowcol_to_a1(1, self.colsIndex.get('vacancy')))))
+        self.janitorEstimateCell = "$%s$1" % (''.join(filter(str.isalpha, rowcol_to_a1(1, self.colsIndex.get('janitor')))))
+        self.maintenanceEstimateCell = "$%s$1" % (''.join(filter(str.isalpha, rowcol_to_a1(1, self.colsIndex.get('maintenance')))))
+        self.managementEstimateCell = "$%s$1" % (''.join(filter(str.isalpha, rowcol_to_a1(1, self.colsIndex.get('management')))))
+        self.mortgageEstimateCell = "$%s$1" % (''.join(filter(str.isalpha, rowcol_to_a1(1, self.colsIndex.get('mortgage')))))
+        self.capitalisationEstimateCell = "$%s$1" % (''.join(filter(str.isalpha, rowcol_to_a1(1, self.colsIndex.get('capitalisation')))))
+        self.hypotheticalEstimateCell = "$%s$1" % (''.join(filter(str.isalpha, rowcol_to_a1(1, self.colsIndex.get('hypothetical_appreciation')))))
+        self.jointTgaEstimateCell = "$%s$1" % (''.join(filter(str.isalpha, rowcol_to_a1(1, self.colsIndex.get('joint_tga')))))
+    
+    def get_cell_value(self, name):
+        return rowcol_to_a1(self.row, self.colsIndex.get(name))
 
     @abstractmethod
     def get_address(self):
@@ -95,85 +103,91 @@ class WorksheetStructure(ABC):
     def get_energy_price(self):
         pass
 
-    def get_price_per_unit(self, col):
-        return "=%s/%s" % (rowcol_to_a1(self.rowsIndex.get('price'), col), rowcol_to_a1(self.rowsIndex.get('units_count'), col))
+    def get_price_per_unit(self):
+        return "=%s/%s" % (self.get_cell_value('price'), self.get_cell_value('units_count'))
 
-    def get_avg_monthly_rent(self, col):
-        return "=%s/12/%s" % (rowcol_to_a1(self.rowsIndex.get('gross_revenue'), col), rowcol_to_a1(self.rowsIndex.get('units_count'), col))
+    def get_avg_monthly_rent(self):
+        return "=%s/12/%s" % (self.get_cell_value('gross_revenue'), self.get_cell_value('units_count'))
     
-    def get_rents_price_diff_in_sector(self, col):
-        return "=if(%s>'Données sur loyer'!$E$7,\"above\",\"below\")" % (rowcol_to_a1(self.rowsIndex.get('avg_unit_price'), col))
+    def get_rents_price_diff_in_sector(self):
+        return "=if(%s>'Données sur loyer'!$E$7,\"above\",\"below\")" % (self.get_cell_value('avg_unit_price'))
     
-    def get_normalized_net_revenues(self, col):
-        return "=%s-%s" % (rowcol_to_a1(self.rowsIndex.get('gross_revenue'), col), rowcol_to_a1(self.rowsIndex.get('normalized_expenses'), col))
+    def get_normalized_net_revenues(self):
+        return "=%s-%s" % (self.get_cell_value('gross_revenue'), self.get_cell_value('normalized_expenses'))
     
-    def get_tga(self, col):
-        return "=%s/%s" % (rowcol_to_a1(self.rowsIndex.get('net_revenue'), col), rowcol_to_a1(self.rowsIndex.get('price'), col))
+    def get_tga(self):
+        return "=%s/%s" % (self.get_cell_value('net_revenue'), self.get_cell_value('price'))
     
-    def get_delta_per_unit(self, col):
-        return "=%s-%s" % (rowcol_to_a1(self.rowsIndex.get('new_construct_value'), col), rowcol_to_a1(self.rowsIndex.get('price_per_unit'), col))
+    def get_delta_per_unit(self):
+        return "=%s-%s" % (self.get_cell_value('new_construct_value'), self.get_cell_value('price_per_unit'))
     
-    def get_delta_new_construction(self, col):
-        return "=%s*%s" % (rowcol_to_a1(self.rowsIndex.get('delta_per_unit'), col), rowcol_to_a1(self.rowsIndex.get('units_count'), col))
+    def get_delta_new_construction(self):
+        return "=%s*%s" % (self.get_cell_value('delta_per_unit'), self.get_cell_value('units_count'))
     
-    def get_renovation_price(self, col):
-        return "=if(%s<125000,80000,0)" % (rowcol_to_a1(self.rowsIndex.get('price_per_unit'), col))
+    def get_renovation_price(self):
+        return "=if(%s<125000,80000,0)" % (self.get_cell_value('price_per_unit'))
     
-    def get_profit_per_unit(self, col):
-        return "=%s-%s" % (rowcol_to_a1(self.rowsIndex.get('delta_per_unit'), col), rowcol_to_a1(self.rowsIndex.get('renovation'), col))
+    def get_profit_per_unit(self):
+        return "=%s-%s" % (self.get_cell_value('delta_per_unit'), self.get_cell_value('renovation'))
     
-    def get_value_creation(self, col):
-        return "=%s*%s" % (rowcol_to_a1(self.rowsIndex.get('profit_per_unit'), col), rowcol_to_a1(self.rowsIndex.get('units_count'), col))
+    def get_value_creation(self):
+        return "=%s*%s" % (self.get_cell_value('profit_per_unit'), self.get_cell_value('units_count'))
     
-    def get_normalized_expenses(self, col):
-        return "=SUM(%s:%s)" % (rowcol_to_a1(self.rowsIndex.get('municipal_taxes'), col), rowcol_to_a1(self.rowsIndex.get('management'), col))
+    def get_normalized_expenses(self):
+        return "=SUM(%s:%s)" % (self.get_cell_value('municipal_taxes'), self.get_cell_value('management'))
     
-    def get_total_expenses(self, col):
-        return "=%s+%s" % (rowcol_to_a1(self.rowsIndex.get('normalized_expenses'), col), rowcol_to_a1(self.rowsIndex.get('mortgage'), col))
+    def get_total_expenses(self):
+        return "=%s+%s" % (self.get_cell_value('normalized_expenses'), self.get_cell_value('mortgage'))
     
-    def get_expenses_percentage(self, col):
-        return "=%s/%s" % (rowcol_to_a1(self.rowsIndex.get('normalized_expenses'), col), rowcol_to_a1(self.rowsIndex.get('gross_revenue'), col))
+    def get_expenses_percentage(self):
+        return "=%s/%s" % (self.get_cell_value('normalized_expenses'), self.get_cell_value('gross_revenue'))
     
-    def get_janitor_expenses(self, col):
-        return "=if(%s>8, (%s*%s), 0)" % (rowcol_to_a1(self.rowsIndex.get('units_count'), col), self.janitorEstimateCell, rowcol_to_a1(self.rowsIndex.get('units_count'), col))
+    def get_janitor_expenses(self):
+        return "=if(%s>8, (%s*%s), 0)" % (self.get_cell_value('units_count'), self.janitorEstimateCell, self.get_cell_value('units_count'))
     
-    def get_vacancy(self, col):
-        return "=%s*%s" % (self.vacancyEstimateCell, rowcol_to_a1(self.rowsIndex.get('gross_revenue'), col))
+    def get_vacancy(self):
+        return "=%s*%s" % (self.vacancyEstimateCell, self.get_cell_value('gross_revenue'))
     
-    def get_annual_maintenance(self, col):
-        return "=%s*%s" % (self.maintenanceEstimateCell, rowcol_to_a1(self.rowsIndex.get('units_count'), col))
+    def get_annual_maintenance(self):
+        return "=%s*%s" % (self.maintenanceEstimateCell, self.get_cell_value('units_count'))
     
-    def get_annual_management(self, col):
-        return "=%s*%s*%s*12" % (self.managementEstimateCell, rowcol_to_a1(self.rowsIndex.get('avg_unit_price'), col), rowcol_to_a1(self.rowsIndex.get('units_count'), col))
+    def get_annual_management(self):
+        return "=%s*%s*%s*12" % (self.managementEstimateCell, self.get_cell_value('avg_unit_price'), self.get_cell_value('units_count'))
     
-    def get_annual_mortgage(self, col):
-        return "=-pmt(%s/12,30*12,(%s-%s))*12" % (self.mortgageEstimateCell, rowcol_to_a1(4, col), rowcol_to_a1(self.rowsIndex.get('units_count'), col))
+    def get_annual_mortgage(self):
+        return "=-pmt(%s/12,30*12,(%s-%s))*12" % (self.mortgageEstimateCell, self.get_cell_value('price'), self.get_cell_value('downpayment'))
     
-    def get_downpayment(self, col):
-        return "=if(%s>4,0.15*%s,0.25*%s)" % (rowcol_to_a1(self.rowsIndex.get('units_count'), col), rowcol_to_a1(self.rowsIndex.get('price'), col), rowcol_to_a1(self.rowsIndex.get('price'), col))
+    def get_downpayment(self):
+        return "=if(%s>4,0.15*%s,0.25*%s)" % (self.get_cell_value('units_count'), self.get_cell_value('price'), self.get_cell_value('price'))
     
-    def get_cashflow_before_taxes(self, col):
-        return "=%s-%s" % (rowcol_to_a1(self.rowsIndex.get('gross_revenue'), col), rowcol_to_a1(self.rowsIndex.get('total'), col))
+    def get_cashflow_before_taxes(self):
+        return "=%s-%s" % (self.get_cell_value('gross_revenue'), self.get_cell_value('total'))
     
-    def get_capitalisation_before_taxes(self, col):
-        return "=%s*%s" % (rowcol_to_a1(self.rowsIndex.get('mortgage'), col), self.capitalisationEstimateCell)
+    def get_capitalisation_before_taxes(self):
+        return "=%s*%s" % (self.get_cell_value('mortgage'), self.capitalisationEstimateCell)
     
-    def get_total_non_speculative(self, col):
-        return "=%s+%s" % (rowcol_to_a1(self.rowsIndex.get('cashflow'), col), rowcol_to_a1(self.rowsIndex.get('capitalisation'), col))
+    def get_total_non_speculative(self):
+        return "=%s+%s" % (self.get_cell_value('cashflow'), self.get_cell_value('capitalisation'))
     
-    def get_bi_factor_return(self, col):
-        return "=%s/%s" % (rowcol_to_a1(self.rowsIndex.get('non_speculative_total'), col), rowcol_to_a1(self.rowsIndex.get('downpayment'), col))
+    def get_bi_factor_return(self):
+        return "=%s/%s" % (self.get_cell_value('non_speculative_total'), self.get_cell_value('downpayment'))
     
-    def get_hypothetical_appreciation(self, col):
-        return "=%s*%s" % (self.hypotheticalEstimateCell, rowcol_to_a1(self.rowsIndex.get('price'), col))
+    def get_hypothetical_appreciation(self):
+        return "=%s*%s" % (self.hypotheticalEstimateCell, self.get_cell_value('price'))
     
-    def get_tri_factor_return(self, col):
-        return "=(%s+%s)/%s" % (rowcol_to_a1(self.rowsIndex.get('hypothetical_appreciation'), col), rowcol_to_a1(self.rowsIndex.get('non_speculative_total'), col), rowcol_to_a1(self.rowsIndex.get('downpayment'), col))
+    def get_tri_factor_return(self):
+        return "=(%s+%s)/%s" % (self.get_cell_value('hypothetical_appreciation'), self.get_cell_value('non_speculative_total'), self.get_cell_value('downpayment'))
     
-    def get_jvm(self, col):
+    def get_joint_tga(self):
+        return "=%s" % self.jointTgaEstimateCell
+
+    def get_jvm(self):
         return "=(%s-%s+%s)/%s" % (
-            rowcol_to_a1(self.rowsIndex.get('gross_revenue'), col),
-            rowcol_to_a1(self.rowsIndex.get('total'), col),
-            rowcol_to_a1(self.rowsIndex.get('mortgage'), col),
-            rowcol_to_a1(self.rowsIndex.get('mortgage'), col)
+            self.get_cell_value('gross_revenue'),
+            self.get_cell_value('total'),
+            self.get_cell_value('mortgage'),
+            self.get_cell_value('joint_tga')
         )
+    
+    def get_deal_or_no_deal(self):
+        return "=%s-%s" % (self.get_cell_value('price'), self.get_cell_value('jvm'))
