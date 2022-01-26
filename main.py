@@ -1,9 +1,9 @@
 import gspread
 import pandas as pd
 from oauth2client.service_account import ServiceAccountCredentials
-import requests
 
 from providers.pmml import Pmml
+from providers.remax import Remax
 
 # define the scope
 scope = ['https://spreadsheets.google.com/feeds','https://www.googleapis.com/auth/drive']
@@ -19,6 +19,23 @@ spreadsheet = client.open('Devoir MREX')
 # get the first sheet of the Spreadsheet
 worksheet = spreadsheet.get_worksheet_by_id(277729321)
 
-provider = Pmml()
-provider.fetch_buildings("Drummondville")
-provider.export_to_worksheet(worksheet)
+# Worksheet static cells initialization
+worksheet.update_cell(1, 24, 195)
+worksheet.update_cell(1, 25, 0.03)
+worksheet.update_cell(1, 26, 550)
+worksheet.update_cell(1, 27, 0.05)
+worksheet.update_cell(1, 29, 0.03)
+worksheet.update_cell(1, 33, 0.49)
+worksheet.update_cell(1, 36, 0.02)
+worksheet.update_cell(1, 38, 0.04)
+worksheet.update_cell(1, 42, 0.05)
+worksheet.update_cell(1, 52, 0.75)
+
+providers = [
+    Pmml(worksheet),
+    Remax(worksheet)
+]
+
+for provider in providers:
+    provider.fetch_buildings("Sherbrooke")
+    provider.export_to_worksheet()
