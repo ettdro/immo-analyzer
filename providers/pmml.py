@@ -43,6 +43,8 @@ class Pmml(Provider):
         worksheet.update_cell(1, 33, 0.49)
         worksheet.update_cell(1, 36, 0.02)
         worksheet.update_cell(1, 38, 0.04)
+        worksheet.update_cell(1, 42, 0.05)
+        worksheet.update_cell(1, 52, 0.75)
 
         for building in self.buildingLinks:
             link = "https://goplex.com/api/proprietes/avendre/{}".format(building.get('link'))
@@ -93,7 +95,21 @@ class Pmml(Provider):
                 structure.get_tri_factor_return(),
                 structure.get_joint_tga(),
                 structure.get_jvm(),
-                structure.get_deal_or_no_deal()
+                structure.get_deal_or_no_deal(),
+                structure.get_break_even(),
+                structure.get_cash_on_cash(),
+                structure.get_profitability_treshold(),
+                structure.get_jvm_purchase(),
+                "", # manual inputs
+                "", # manual inputs
+                "", # manual inputs
+                structure.get_net_revenue_after_optimisation(),
+                structure.get_value_after_optimisation(),
+                structure.get_value_creation_potential(),
+                structure.get_real_value_creation(),
+                structure.get_refinance_mortgage(),
+                structure.get_refinancing_proceeds(),
+                structure.get_rcd()
             ], row, ValueInputOption.user_entered)
 
             row += 1

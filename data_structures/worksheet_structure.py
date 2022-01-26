@@ -44,18 +44,37 @@ class WorksheetStructure(ABC):
             'tri_factor_return': 37,
             'joint_tga': 38,
             'jvm': 39,
-            'deal_or_no_deal': 40
+            'deal_or_no_deal': 40,
+            'break_even': 41,
+            'coc': 42,
+            'profitability_treshold': 43,
+            'jvm_purchase': 44,
+            'investment_per_unit': 45,
+            'potential_raise_per_unit': 46,
+            'total_investment': 47,
+            'net_revenue_after_optimisation': 48,
+            'value_after_optimisation': 49,
+            'value_creation_potential': 50,
+            'real_value_creation': 51,
+            'refinance_mortgage': 52,
+            'refinancing_proceeds': 53,
+            'rcd': 54
         })
 
-        self.vacancyEstimateCell = "$%s$1" % (''.join(filter(str.isalpha, rowcol_to_a1(1, self.colsIndex.get('vacancy')))))
-        self.janitorEstimateCell = "$%s$1" % (''.join(filter(str.isalpha, rowcol_to_a1(1, self.colsIndex.get('janitor')))))
-        self.maintenanceEstimateCell = "$%s$1" % (''.join(filter(str.isalpha, rowcol_to_a1(1, self.colsIndex.get('maintenance')))))
-        self.managementEstimateCell = "$%s$1" % (''.join(filter(str.isalpha, rowcol_to_a1(1, self.colsIndex.get('management')))))
-        self.mortgageEstimateCell = "$%s$1" % (''.join(filter(str.isalpha, rowcol_to_a1(1, self.colsIndex.get('mortgage')))))
-        self.capitalisationEstimateCell = "$%s$1" % (''.join(filter(str.isalpha, rowcol_to_a1(1, self.colsIndex.get('capitalisation')))))
-        self.hypotheticalEstimateCell = "$%s$1" % (''.join(filter(str.isalpha, rowcol_to_a1(1, self.colsIndex.get('hypothetical_appreciation')))))
-        self.jointTgaEstimateCell = "$%s$1" % (''.join(filter(str.isalpha, rowcol_to_a1(1, self.colsIndex.get('joint_tga')))))
+        self.vacancyEstimateCell = "$%s$1" % (self.get_static_cell('vacancy'))
+        self.janitorEstimateCell = "$%s$1" % (self.get_static_cell('janitor'))
+        self.maintenanceEstimateCell = "$%s$1" % (self.get_static_cell('maintenance'))
+        self.managementEstimateCell = "$%s$1" % (self.get_static_cell('management'))
+        self.mortgageEstimateCell = "$%s$1" % (self.get_static_cell('mortgage'))
+        self.capitalisationEstimateCell = "$%s$1" % (self.get_static_cell('capitalisation'))
+        self.hypotheticalEstimateCell = "$%s$1" % (self.get_static_cell('hypothetical_appreciation'))
+        self.jointTgaEstimateCell = "$%s$1" % (self.get_static_cell('joint_tga'))
+        self.cashOnCashEstimateCell = "$%s$1" % (self.get_static_cell('coc'))
+        self.refinanceMortgageEstimateCell = "$%s$1" % (self.get_static_cell('refinance_mortgage'))
     
+    def get_static_cell(self, name):
+        return ''.join(filter(str.isalpha, rowcol_to_a1(1, self.colsIndex.get(name))))
+
     def get_cell_value(self, name):
         return rowcol_to_a1(self.row, self.colsIndex.get(name))
 
@@ -191,3 +210,41 @@ class WorksheetStructure(ABC):
     
     def get_deal_or_no_deal(self):
         return "=%s-%s" % (self.get_cell_value('price'), self.get_cell_value('jvm'))
+    
+    def get_break_even(self):
+        return "=-%s/%s/12" % (self.get_cell_value('cashflow'), self.get_cell_value('units_count'))
+    
+    def get_cash_on_cash(self):
+        return "=(%s*%s)/12/%s" % (self.get_cell_value('downpayment'), self.cashOnCashEstimateCell, self.get_cell_value('units_count'))
+    
+    def get_profitability_treshold(self):
+        return "=%s+%s" % (self.get_cell_value('break_even'), self.get_cell_value('coc'))
+    
+    def get_jvm_purchase(self):
+        return "=%s/%s" % (self.get_cell_value('net_revenue'), self.get_cell_value('joint_tga'))
+
+    def get_value_after_optimisation(self):
+        return "=%s/%s" % (self.get_cell_value('net_revenue_after_optimisation'), self.get_cell_value('joint_tga'))
+    
+    def get_net_revenue_after_optimisation(self):
+        return "=%s+(%s*12*%s)" % (self.get_cell_value('net_revenue'), self.get_cell_value('potential_raise_per_unit'), self.get_cell_value('units_count'))
+    
+    def get_value_creation_potential(self):
+        return "=%s-%s-%s" % (self.get_cell_value('value_after_optimisation'), self.get_cell_value('jvm_purchase'), self.get_cell_value('total_investment'))
+    
+    def get_real_value_creation(self):
+        return "=%s-%s" % (self.get_cell_value('value_after_optimisation'), self.get_cell_value('price'))
+    
+    def get_refinance_mortgage(self):
+        return "=%s*%s" % (self.get_cell_value('value_after_optimisation'), self.refinanceMortgageEstimateCell)
+    
+    def get_refinancing_proceeds(self):
+        return "=%s-(%s-%s)-%s" % (
+            self.get_cell_value('refinance_mortgage'),
+            self.get_cell_value('price'),
+            self.get_cell_value('downpayment'),
+            self.get_cell_value('total_investment')
+        )
+    
+    def get_rcd(self):
+        return "=(%s-%s)/%s" % (self.get_cell_value('gross_revenue'), self.get_cell_value('normalized_expenses'), self.get_cell_value('mortgage'))
