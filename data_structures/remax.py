@@ -7,7 +7,7 @@ class RemaxDataStructure(WorksheetStructure):
         super().__init__(row)
     
     def get_address(self):
-        return self.jsonData.get('address')
+        return '=HYPERLINK("%s", "%s")' % (self.jsonData.get('url'), self.jsonData.get('address'))
     
     def get_url(self):
         return self.jsonData.get('url')
@@ -34,7 +34,7 @@ class RemaxDataStructure(WorksheetStructure):
         return self.jsonData.get('school_taxes')
 
     def get_insurances_price(self):
-        return 0#self.jsonData.get('fAssurances')
+        return self.jsonData.get('insurances')
 
     def get_energy_price(self):
-        return 0#self.jsonData.get('fElectricite')
+        return self.jsonData.get('energy')

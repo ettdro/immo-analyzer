@@ -8,7 +8,6 @@ from providers.provider import Provider
 class Pmml(Provider):
 
     def __init__(self, worksheet: Worksheet) -> None:
-        self.buildingLinks = []
         self.baseURL = "https://goplex.com/api/proprietes/avendre"
         super().__init__(worksheet)
     
@@ -17,9 +16,12 @@ class Pmml(Provider):
         To get all the buildings, use % symbol in query.
         buildingReq = requests.get("https://goplex.com/api/proprietes/avendre?q=%")
         '''
+        existingLinks = self.get_existing_links()
+
         req = requests.get(self.baseURL + "?q={}".format(city))
         for jsonBuilding in req.json():
-            if jsonBuilding.get('sNomVille') == city:
+            sheetLink = "https://goplex.com/{}".format(jsonBuilding.get('sLien'))
+            if jsonBuilding.get('sNomVille') == city and sheetLink not in existingLinks:
                 self.buildingLinks.append(dict({
                     "address": "%s %s" % (jsonBuilding.get('sNumeroCivique'), jsonBuilding.get('sRue')),
                     "link": jsonBuilding.get('sLien'),
@@ -37,4 +39,4 @@ class Pmml(Provider):
             super().export_to_worksheet(PmmlDataStructure(jsonData, super().get_next_empty_row()))
 
             # Simulate time between queries for more realism.
-            time.sleep(1)
+            time.sleep(3)

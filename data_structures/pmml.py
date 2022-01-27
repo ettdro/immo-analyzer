@@ -7,7 +7,7 @@ class PmmlDataStructure(WorksheetStructure):
         super().__init__(row)
     
     def get_address(self):
-        return "%s %s" % (self.jsonData.get('sNumeroCivique'), self.jsonData.get('sRue'))
+        return '=HYPERLINK("%s", "%s %s")' % (self.get_url(), self.jsonData.get('sNumeroCivique'), self.jsonData.get('sRue'))
     
     def get_url(self):
         return "https://goplex.com/{}".format(self.jsonData.get('sLien'))

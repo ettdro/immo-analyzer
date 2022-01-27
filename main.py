@@ -36,6 +36,13 @@ providers = [
     Remax(worksheet)
 ]
 
+cities = [
+    "Drummondville",
+    "Sherbrooke"
+]
+
 for provider in providers:
-    provider.fetch_buildings("Sherbrooke")
-    provider.export_to_worksheet()
+    for city in cities:
+        provider.fetch_buildings(city)
+        provider.export_to_worksheet()
+        provider.after_export()

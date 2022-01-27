@@ -162,7 +162,7 @@ class WorksheetStructure(ABC):
         return "=%s/%s" % (self.get_cell_value('normalized_expenses'), self.get_cell_value('gross_revenue'))
     
     def get_janitor_expenses(self):
-        return "=if(%s>8, (%s*%s), 0)" % (self.get_cell_value('units_count'), self.janitorEstimateCell, self.get_cell_value('units_count'))
+        return "=if(%s<8, (%s*%s), (330*%s))" % (self.get_cell_value('units_count'), self.janitorEstimateCell, self.get_cell_value('units_count'), self.get_cell_value('units_count'))
     
     def get_vacancy(self):
         return "=%s*%s" % (self.vacancyEstimateCell, self.get_cell_value('gross_revenue'))

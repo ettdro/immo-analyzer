@@ -8,15 +8,11 @@ from data_structures.worksheet_structure import WorksheetStructure
 from providers.provider import Provider
 
 class Remax(Provider):
-    # Estrie = 5
-    # C-du-Qc = 17
-
     def __init__(self, worksheet: Worksheet) -> None:
         self.regionMapping = {
             'Drummondville': 17,
             'Sherbrooke': 5
         }
-        self.buildingLinks = []
         self.baseUrl = "https://www.remax-quebec.com"
         super().__init__(worksheet)
     
@@ -33,6 +29,8 @@ class Remax(Provider):
         
         # Keep unique values in list
         pagesToRequest = list(set(pagesToRequest))
+
+        existingLinks = self.get_existing_links()
         
         for pageLink in pagesToRequest:
             page = requests.post(pageLink, data={
@@ -47,11 +45,11 @@ class Remax(Provider):
                 streetAddress = details.find(class_='property-address').find(class_='property-address-street').text.replace(', ', '')
                 locality = details.find(class_='property-address').find(class_='property-address-locality').text.replace(', ', '')
                 
-                if city in locality:
+                if city in locality and self.baseUrl + link not in existingLinks:
                     self.buildingLinks.append({
                         "address": streetAddress,
                         "link": self.baseUrl + link,
-                        "city": locality,
+                        "city": city,
                     })
     
     def export_to_worksheet(self):
@@ -59,15 +57,23 @@ class Remax(Provider):
             link = building.get('link')
             resultPage = requests.get(link)
 
+            print(link, resultPage.status_code)
+
             soup = BeautifulSoup(resultPage.content, 'html.parser')
-            price = int(re.sub(r'\W+', '', soup.find(class_='Caption__Price').text.strip()))
+            price = self.format_money_string_to_int(soup.find(class_='Caption__Price').text.strip())
             unitsCount = self.get_units_from_html(soup.find(class_='Caption__Title').find(class_='Caption__Name').text)
             grossRevenue = soup.find(class_='Financials__Subtitle', text='Revenus annuels bruts (potentiels)').findNext('ul').find(class_='Financials__Data').text.strip()
-            taxesList = soup.find(class_='Financials__Subtitle', text='Taxes').findNext('ul').find_all(class_='Financials__Item')
-            municipalTaxes = taxesList[0].find(class_='Financials__Data').text.strip() if len(taxesList) > 0 else 0 
-            schoolTaxes = taxesList[1].find(class_='Financials__Data').text.strip() if len(taxesList) > 1 else 0
-            #insurances = soup.find(class_='Financials__Subtitle', text='Dépenses Annuelles').findNext('ul')#.find(class_='Financials__Label', text='Assurances')
-            #print(insurances)
+            
+            taxesDiv = soup.find(class_='Financials__Subtitle', text='Taxes').findNext('ul')
+            taxes = self.get_taxes_html(taxesDiv)
+
+            annualExpensesDiv = soup.find(class_='Financials__Subtitle', text='Dépenses Annuelles')
+            insurances = self.get_insurance_html(annualExpensesDiv)
+
+            # We check for only 'nergie' because I'm not sure that the first letter is capital or not and with accent or not.
+            energyDiv = soup.find(class_='Financials__Subtitle', text=lambda t : 'nergie' in t)
+            energy = self.get_energy(energyDiv)
+            
 
             data = {
                 'address': building.get('address'),
@@ -75,14 +81,12 @@ class Remax(Provider):
                 'city': building.get('city'),
                 'price': price,
                 'units_count': unitsCount,
-                'gross_revenue': int(re.sub(r'\W+', '', grossRevenue.replace(',00 $', ''))),
-                'municipal_taxes': int(re.sub(r'\W+', '', municipalTaxes.replace(',00 $', ''))),
-                'school_taxes': int(re.sub(r'\W+', '', schoolTaxes.replace(',00 $', ''))),
+                'gross_revenue': self.format_money_string_to_int(grossRevenue),
+                'municipal_taxes': self.format_money_string_to_int(taxes[0]),
+                'school_taxes': self.format_money_string_to_int(taxes[1]),
+                'insurances': self.format_money_string_to_int(insurances),
+                'energy': energy
             }
-
-            #print(data)
-
-            print(link, resultPage.status_code)
 
             super().export_to_worksheet(RemaxDataStructure(data, super().get_next_empty_row()))
 
@@ -108,3 +112,37 @@ class Remax(Provider):
             return 2
         
         return 0
+    
+    def get_insurance_html(self, annualExpenses):
+        insurances = "0"
+        if annualExpenses is not None:
+            insurancesHtml = annualExpenses.findNext('ul').find(class_='Financials__Label', text=lambda t : 'Assurances' in t)
+            if insurancesHtml is not None:
+                insurances = insurancesHtml.findNext(class_='Financials__Data').text.strip()
+        return insurances
+    
+    def get_taxes_html(self, taxesDiv):
+        municipalTaxes = "0"
+        schoolTaxes = "0"
+
+        municipalTaxesLabel = taxesDiv.find(class_='Financials__Label', text=lambda t : 'Taxes municipales' in t)
+        if municipalTaxesLabel is not None:
+            municipalTaxes = municipalTaxesLabel.findNext(class_='Financials__Data').text.strip() 
+        
+        schoolTaxesLabel = taxesDiv.find(class_='Financials__Label', text=lambda t : 'Taxes scolaires' in t)
+        if schoolTaxesLabel is not None:
+            schoolTaxes = schoolTaxesLabel.findNext(class_='Financials__Data').text.strip()
+        
+        return (municipalTaxes, schoolTaxes)
+    
+    def get_energy(self, energyDiv):
+        energySum = 0
+        if energyDiv is not None:
+            energyItems = energyDiv.findNext('ul').find_all(class_='Financials__Item')
+            if len(energyItems) > 0:
+                for energyItem in energyItems:
+                    energySum += self.format_money_string_to_int(energyItem.find(class_='Financials__Data').text.strip())
+        return energySum
+    
+    def format_money_string_to_int(self, text):
+        return int(re.sub(r'\D+', '', text.replace(',00 $', '').replace(' ', '')))

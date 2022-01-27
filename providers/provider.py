@@ -1,12 +1,17 @@
 from abc import ABC, abstractmethod
 from gspread.utils import ValueInputOption
 from gspread import Worksheet
-
+from datetime import datetime
 from data_structures.worksheet_structure import WorksheetStructure
 
 class Provider(ABC):
     def __init__(self, worksheet: Worksheet) -> None:
         self.worksheet = worksheet
+        self.buildingLinks = []
+    
+    def get_existing_links(self):
+        # URL column
+        return [item for sublist in self.worksheet.get('B3:B') for item in sublist]
 
     @abstractmethod
     def fetch_buildings(self, city):
@@ -70,6 +75,11 @@ class Provider(ABC):
             structure.get_refinancing_proceeds(),
             structure.get_rcd()
         ], structure.row, ValueInputOption.user_entered)
+    
+    def after_export(self):
+        self.buildingLinks = []
+        self.worksheet.update_cell(1, 1, datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        self.worksheet.update_cell(2, 1, "=COUNTA(A3:A)")
     
     def get_next_empty_row(self):
         initialRow = 3
