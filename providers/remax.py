@@ -1,5 +1,6 @@
 import time
 import re
+from unicodedata import name
 from bs4 import BeautifulSoup
 import requests
 from gspread import Worksheet
@@ -13,19 +14,22 @@ class Remax(Provider):
             'Drummondville': 17,
             'Sherbrooke': 5
         }
+        self.cityFormString = {
+            'Drummondville': "mode=criterias&order=date_desc&query=&categorie=plex&selectItemcategorie=plex&regionIds=17&selectItemregionIds=17&cityIds=49057&cityIds=49065&cityIds=49090&cityIds=49035&selectItemcityIds=49057&selectItemcityIds=49065&selectItemcityIds=49090&selectItemcityIds=49035",
+            'Sherbrooke': "mode=criterias&order=date_desc&query=&categorie=plex&selectItemcategorie=plex&regionIds=5&selectItemregionIds=5&cityIds=43035&cityIds=4302066&cityIds=43020&cityIds=43010&cityIds=43025&cityIds=43024&selectItemcityIds=43035&selectItemcityIds=4302066&selectItemcityIds=43020&selectItemcityIds=43010&selectItemcityIds=43025&selectItemcityIds=43024"
+        }
         self.baseUrl = "https://www.remax-quebec.com"
         super().__init__(worksheet)
     
     def fetch_buildings(self, city):
-        searchPage = requests.post(self.baseUrl + "/fr/recherche/plex/resultats.rmx", data={
-            'regionIds': self.regionMapping.get(city),
-            'selecItemregionIds': self.regionMapping.get(city),
-        })
+        searchPage = requests.post(self.baseUrl + "/fr/recherche/plex/resultats.rmx", data=self.cityFormString.get(city))
         soup = BeautifulSoup(searchPage.content, 'html.parser')
         pages = soup.find(class_='pagination').find_all('li')
         pagesToRequest = []
         for page in pages:
-            pagesToRequest.append(self.baseUrl + page.find('a')['href'])
+            href = page.find('a')['href']
+            if href != "#":
+                pagesToRequest.append(self.baseUrl + href)
         
         # Keep unique values in list
         pagesToRequest = list(set(pagesToRequest))
